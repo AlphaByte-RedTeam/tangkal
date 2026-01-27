@@ -1,3 +1,4 @@
-declare module 'shannon-entropy' {
-  export default function entropy(str: string): number;
-}
+declare module 'shannon-entropy';
+declare module '@yarnpkg/lockfile';
+declare module '@babel/parser';
+declare module '@babel/traverse';

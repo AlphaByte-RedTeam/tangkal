@@ -15,6 +15,9 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@babel/parser": "^7.28.6",
+    "@babel/traverse": "^7.28.6",
+    "@yarnpkg/lockfile": "^1.1.0",
     "axios": "^1.13.3",
     "chalk": "^5.6.2",
     "commander": "^14.0.2",
@@ -24,7 +27,8 @@
     "inquirer": "^13.2.1",
     "ora": "^9.1.0",
     "p-limit": "^7.2.0",
-    "shannon-entropy": "^0.0.3"
+    "shannon-entropy": "^0.0.3",
+    "yaml": "^2.7.0"
   },
   "devDependencies": {
     "@types/fast-levenshtein": "^0.0.4",

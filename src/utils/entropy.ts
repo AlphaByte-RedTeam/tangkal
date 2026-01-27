@@ -1,6 +1,10 @@
-import entropy from 'shannon-entropy';
+// @ts-ignore
+import _entropy from 'shannon-entropy';
+// @ts-ignore
+const entropy = _entropy.default || _entropy;
 
 export function calculateEntropy(text: string): number {
+  if (typeof entropy !== 'function') return 0;
   return entropy(text);
 }
 

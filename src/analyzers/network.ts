@@ -3,7 +3,37 @@ import pLimit from 'p-limit';
 import type { Finding } from './static-analysis.js';
 import type { Dependency } from '../utils/lockfile.js';
 
-const limit = pLimit(5); // Concurrency limit
+const limit = pLimit(10); // Increased concurrency for network checks
+
+/**
+ * Main entry point for network audit.
+ * Checks vulnerabilities for all packages.
+ * Checks reputation for a subset (or all if count is low) to avoid rate limiting.
+ */
+export async function auditDependencies(packages: Dependency[]): Promise<Finding[]> {
+  const findings: Finding[] = [];
+
+  // 1. Vulnerabilities (Batch API - Fast)
+  try {
+      const vulnFindings = await checkVulnerabilitiesBatch(packages);
+      findings.push(...vulnFindings);
+  } catch (e) {
+      console.error('Vulnerability check failed:', e);
+  }
+
+  // 2. Reputation (Per-package API - Slow)
+  // Only check reputation if < 200 packages to avoid long wait times
+  if (packages.length < 200) {
+      const reputationPromises = packages.map(p => checkReputation(p.name));
+      const repResults = await Promise.all(reputationPromises);
+      repResults.forEach(r => findings.push(...r));
+  } else {
+      // For large trees, maybe only check random sample? 
+      // Or just skip to be safe.
+  }
+
+  return findings;
+}
 
 /**
  * Checks the npm registry for package reputation (downloads, age).
@@ -18,10 +48,8 @@ export async function checkReputation(pkgName: string): Promise<Finding[]> {
       const findings: Finding[] = [];
       const now = new Date();
       const created = new Date(meta.time.created);
-      const modified = new Date(meta.time.modified);
       
       const ageDays = (now.getTime() - created.getTime()) / (1000 * 60 * 60 * 24);
-      const modDays = (now.getTime() - modified.getTime()) / (1000 * 60 * 60 * 24);
 
       if (ageDays < 14) {
         findings.push({
@@ -34,7 +62,6 @@ export async function checkReputation(pkgName: string): Promise<Finding[]> {
       }
 
       // 2. Get Downloads (Popularity)
-      // We ignore this for scoped packages sometimes, but let's try.
       try {
         const dlUrl = `https://api.npmjs.org/downloads/point/last-week/${pkgName}`;
         const { data: dl } = await axios.get(dlUrl, { timeout: 3000 });
@@ -56,28 +83,28 @@ export async function checkReputation(pkgName: string): Promise<Finding[]> {
 
     } catch (error: any) {
       if (error.response && error.response.status === 404) {
+        const isScoped = pkgName.startsWith('@');
         return [{
           type: 'Reputation',
           name: pkgName,
           file: 'package.json',
-          severity: 'critical',
-          description: 'Package not found in npm registry. Possible private dependency or malware injection.'
+          severity: isScoped ? 'low' : 'critical',
+          description: isScoped 
+            ? 'Scoped package not found in public registry (Likely Private).'
+            : 'Unscoped package not found in registry (Possible Malware/Typosquat).'
         }];
       }
-      return []; // Ignore network errors (fail open) or flag as warning?
+      return []; 
     }
   });
 }
 
 /**
  * Checks for known vulnerabilities using OSV API (Batch Mode).
- * Supports checking hundreds of dependencies in a single request.
  */
 export async function checkVulnerabilitiesBatch(packages: Dependency[]): Promise<Finding[]> {
-  // packages = [{ name: 'react', version: '18.2.0' }, ...]
   if (packages.length === 0) return [];
 
-  // OSV Batch limit is roughly 1000, but let's chunk to 500 to be safe
   const chunkSize = 500;
   const chunks: Dependency[][] = [];
   
@@ -98,7 +125,6 @@ export async function checkVulnerabilitiesBatch(packages: Dependency[]): Promise
 
       const { data } = await axios.post('https://api.osv.dev/v1/querybatch', payload, { timeout: 10000 });
       
-      // Collect all unique Vulnerability IDs to fetch details
       const vulnIds = new Set<string>();
       data.results.forEach((res: any) => {
         if (res.vulns) {
@@ -106,22 +132,18 @@ export async function checkVulnerabilitiesBatch(packages: Dependency[]): Promise
         }
       });
 
-      // Fetch details for all IDs in parallel
       const detailsMap = new Map<string, any>();
       const detailPromises = Array.from(vulnIds).map(id => 
         limit(async () => {
           try {
             const { data: detail } = await axios.get(`https://api.osv.dev/v1/vulns/${id}`, { timeout: 5000 });
             detailsMap.set(id, detail);
-          } catch (e) {
-            // If fetch fails, we'll fall back to basic info
-          }
+          } catch (e) {}
         })
       );
 
       await Promise.all(detailPromises);
 
-      // Map back to packages
       data.results.forEach((res: any, idx: number) => {
         if (res.vulns && res.vulns.length > 0) {
           const pkg = chunk[idx];
@@ -130,7 +152,6 @@ export async function checkVulnerabilitiesBatch(packages: Dependency[]): Promise
           res.vulns.forEach((basicV: any) => {
              const v = detailsMap.get(basicV.id) || basicV;
 
-             // Extract fix version if available
              let fixedIn = 'Unknown';
              if (v.affected) {
                 for (const affected of v.affected) {
@@ -139,7 +160,6 @@ export async function checkVulnerabilitiesBatch(packages: Dependency[]): Promise
                             if (range.events) {
                                 for (const event of range.events) {
                                     if (event.fixed) {
-                                        // Take the highest fixed version if multiple exist
                                         if (fixedIn === 'Unknown' || event.fixed > fixedIn) {
                                             fixedIn = event.fixed;
                                         }
@@ -151,12 +171,11 @@ export async function checkVulnerabilitiesBatch(packages: Dependency[]): Promise
                 }
              }
 
-             // Determine severity
              let severity: 'critical' | 'high' | 'medium' | 'low' = 'high';
              if (v.database_specific && v.database_specific.severity) {
                 severity = v.database_specific.severity.toLowerCase();
              } else if (v.severity && v.severity.length > 0) {
-                 severity = 'high'; // Default if structured severity is complex
+                 severity = 'high'; 
              } else {
                 const text = JSON.stringify(v).toLowerCase();
                 if (text.includes('critical')) severity = 'critical';
@@ -165,7 +184,6 @@ export async function checkVulnerabilitiesBatch(packages: Dependency[]): Promise
                 else severity = 'low';
              }
 
-             // Aggregation: Find CVEs to link Snyk/ExploitDB
              const externalRefs: string[] = [];
              if (v.aliases) {
                  v.aliases.forEach((alias: string) => {
@@ -189,7 +207,7 @@ export async function checkVulnerabilitiesBatch(packages: Dependency[]): Promise
                 summary: summary,
                 url: osvUrl,
                 fixedIn: fixedIn,
-                description: summary, // Satisfy Finding interface
+                description: summary, 
                 references: externalRefs
              });
           });

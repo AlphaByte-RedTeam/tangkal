@@ -40,17 +40,17 @@ tangkal .
 Tangkal separates findings into two clear categories: **Malicious Code** and **Vulnerable Packages**.
 
 ```text
-============================
+====================================
 ALERT: Malicious Code Detected
-============================
+====================================
 File: src/utils.js
 Line: 45
 Suspicious pattern detected.
 Code: new Function("return " + decodedPayload)()
 
-=============================
+====================================
 ALERT: Vulnerable Package
-=============================
+====================================
 [SOLUTION]: Upgrade lodash@4.17.15 to lodash@4.17.21 to fix.
 [HIGH Severity] [https://osv.dev/vulnerability/GHSA-xxx] [Snyk: https://security.snyk.io/vuln?search=CVE-2021-23337]
 lodash@4.17.15 Prototype Pollution
