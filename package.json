@@ -1,0 +1,36 @@
+{
+  "name": "tangkal",
+  "version": "1.0.0",
+  "description": "Preventive security scanner for cloned repositories",
+  "main": "dist/index.js",
+  "type": "module",
+  "bin": {
+    "tangkal": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.13.3",
+    "chalk": "^5.6.2",
+    "commander": "^14.0.2",
+    "fast-glob": "^3.3.3",
+    "fast-levenshtein": "^3.0.0",
+    "ignore": "^7.0.5",
+    "inquirer": "^13.2.1",
+    "ora": "^9.1.0",
+    "p-limit": "^7.2.0",
+    "shannon-entropy": "^0.0.3"
+  },
+  "devDependencies": {
+    "@types/fast-levenshtein": "^0.0.4",
+    "@types/inquirer": "^9.0.9",
+    "@types/node": "^25.0.10",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  }
+}

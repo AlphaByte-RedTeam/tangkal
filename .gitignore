@@ -1,0 +1,5 @@
+# Ignore directory
+node_modules/
+dist/
+build/
+coverage/
