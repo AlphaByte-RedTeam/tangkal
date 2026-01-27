@@ -49,7 +49,8 @@ export async function scanDirectory(directory: string, options: ScanOptions = {}
         }
 
         // Standard Read for small files
-        const content = await fs.readFile(filePath, 'utf-8');
+        let content = await fs.readFile(filePath, 'utf-8');
+        content = content.replace(/^\uFEFF/, '');
 
         // Check package.json specifically
         if (file === 'package.json') {
@@ -80,7 +81,9 @@ export async function scanDirectory(directory: string, options: ScanOptions = {}
                     allFindings.push({ ...f, file });
                 });
                 
-            } catch (e) { /* invalid json */ }
+            } catch (e) { 
+                // Error parsing or checking typosquat
+            }
         }
 
         // Static Code Analysis (AST)

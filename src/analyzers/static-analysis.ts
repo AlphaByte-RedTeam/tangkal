@@ -248,7 +248,21 @@ export function analyzeContent(content: string, file: string): Finding[] {
       });
   } catch (e) {}
 
-  // Entropy Check
+  // 2. Heuristics (Long Lines)
+  const longLine = hasLongLines(content);
+  if (longLine) {
+    findings.push({
+      type: 'Heuristic',
+      name: 'Massive Line Length',
+      file,
+      line: longLine.lineIndex,
+      severity: 'high',
+      content: `Line length: ${longLine.length} chars`,
+      description: 'Extremely long line detected. Often indicates minified malware or packed code.'
+    });
+  }
+
+  // 3. Entropy Check (Obfuscation)
   if (!file.endsWith('.json') && isObfuscated(content)) {
     findings.push({
       type: 'Heuristic',
