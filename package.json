@@ -1,18 +1,31 @@
 {
   "name": "tangkal",
-  "version": "1.0.0",
-  "description": "Preventive security scanner for cloned repositories",
+  "version": "1.1.0",
+  "description": "Preventive security scanner for cloned repositories. Detects malicious AST patterns, vulnerable dependencies, and typosquatting.",
   "main": "dist/index.js",
   "type": "module",
   "bin": {
     "tangkal": "./dist/index.js"
   },
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "scripts": {
     "build": "tsc",
+    "prepublishOnly": "pnpm build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "security",
+    "scanner",
+    "malware",
+    "static-analysis",
+    "vulnerability",
+    "typosquatting",
+    "ast"
+  ],
+  "author": "Andrew Virya Victorio",
   "license": "ISC",
   "dependencies": {
     "@babel/parser": "^7.28.6",
