@@ -5,7 +5,7 @@ import chalk from 'chalk';
 export type PackageManager = 'npm' | 'yarn' | 'pnpm' | 'bun' | 'deno';
 
 export async function detectPackageManager(dir: string): Promise<PackageManager> {
-  const files = await fs.readdir(dir).catch(() => []);
+  const files: string[] = await fs.readdir(dir).catch(() => []);
 
   if (files.includes('deno.json') || files.includes('deno.lock')) return 'deno';
   if (files.includes('bun.lockb') || files.includes('bun.lock')) return 'bun';
