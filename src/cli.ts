@@ -3,16 +3,16 @@ import { Command } from "commander";
 import fs from "fs/promises";
 import inquirer from "inquirer";
 import path from "path";
-import { detectPackageManager, runInstall } from "./utils/package-manager.js";
 import type { Finding } from "./analyzers/static-analysis.js";
 import { scanDirectory } from "./scanner.js";
+import { detectPackageManager, runInstall } from "./utils/package-manager.js";
 
 const program = new Command();
 
 program
   .name("tangkal")
   .description("Preventive security scanner for cloned repositories")
-  .version("1.3.0")
+  .version("1.3.1")
   .argument("[directory]", "directory to scan", ".")
   .option("--json", "output results as JSON")
   .option("--no-audit", "skip npm audit check")
