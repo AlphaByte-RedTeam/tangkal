@@ -9,6 +9,7 @@ It is specifically built to detect malicious patterns often found in "Job Scam" 
 - **Dangerous Lifecycle Scripts:** `preinstall`, `postinstall` in `package.json`.
 - **Typosquatting:** Detects packages with names deceptively similar to popular libraries (e.g., `react-doom` vs `react-dom`).
 - **Vulnerability Scanning:** Aggregates data from **OSV**, **Snyk**, and **Exploit DB** to report known vulnerabilities.
+- **Safe Installation:** Prompts to safely install dependencies using the detected package manager (npm, yarn, pnpm, bun, deno) only if the scan is clean.
 
 ## Installation
 
@@ -55,6 +56,16 @@ ALERT: Vulnerable Package
 [HIGH Severity] [https://osv.dev/vulnerability/GHSA-xxx] [Snyk: https://security.snyk.io/vuln?search=CVE-2021-23337]
 lodash@4.17.15 Prototype Pollution
 introduced by lodash@4.17.15
+```
+
+## How to Test
+
+To safely test Tangkal's detection capabilities without risking your main environment, we recommend using our dedicated vulnerability test repository.
+
+```bash
+git clone https://github.com/AlphaByte-RedTeam/vuln-test
+cd vuln-test
+tangkal .
 ```
 
 ## Disclaimer

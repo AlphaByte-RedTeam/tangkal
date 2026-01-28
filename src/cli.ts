@@ -3,6 +3,7 @@ import { Command } from "commander";
 import fs from "fs/promises";
 import inquirer from "inquirer";
 import path from "path";
+import { detectPackageManager, runInstall } from "./utils/package-manager.js";
 import type { Finding } from "./analyzers/static-analysis.js";
 import { scanDirectory } from "./scanner.js";
 
@@ -11,7 +12,7 @@ const program = new Command();
 program
   .name("tangkal")
   .description("Preventive security scanner for cloned repositories")
-  .version("1.2.0")
+  .version("1.3.0")
   .argument("[directory]", "directory to scan", ".")
   .option("--json", "output results as JSON")
   .option("--no-audit", "skip npm audit check")
@@ -27,6 +28,29 @@ program
 
       if (results.length === 0) {
         console.log(chalk.green.bold("\nOK: No suspicious patterns found."));
+
+        const pm = await detectPackageManager(directory);
+        const { confirmInstall } = await inquirer.prompt([
+          {
+            type: "confirm",
+            name: "confirmInstall",
+            message: `Would you like to perform ${pm} install?`,
+            default: false,
+          },
+        ]);
+
+        if (confirmInstall) {
+          try {
+            await runInstall(pm, directory);
+            console.log(
+              chalk.green(`\nSuccessfully installed dependencies using ${pm}.`),
+            );
+          } catch (err: any) {
+            console.error(
+              chalk.red(`\nFailed to install dependencies: ${err.message}`),
+            );
+          }
+        }
         return;
       }
 
